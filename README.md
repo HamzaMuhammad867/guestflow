@@ -1,5 +1,11 @@
 # GuestFlow – Hotel Guest Requests & Room Availability
 
+[![CI](https://github.com/HamzaMuhammad867/guestflow/actions/workflows/ci.yml/badge.svg)](https://github.com/HamzaMuhammad867/guestflow/actions/workflows/ci.yml)
+![.NET 8](https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=white)
+![React](https://img.shields.io/badge/React-TypeScript-3178C6?logo=react&logoColor=white)
+![Azure](https://img.shields.io/badge/Azure-Container%20Apps-0078D4?logo=microsoftazure&logoColor=white)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A full-stack hospitality service for front-desk and operations teams: log guest requests (housekeeping, maintenance, dining, concierge), move them through a controlled workflow, and see live room availability.
 
 ![GuestFlow screenshot](docs/screenshot.png)
@@ -77,7 +83,7 @@ terraform apply
 
 4. Open the `web_url` it prints. When you're done, run `terraform destroy` so you aren't billed.
 
-**Cost:** Container Apps includes a monthly free grant, and Azure SQL serverless auto-pauses after an hour idle. Expect a few dollars a month at most if you leave it running. Destroy it after your interviews.
+**Cost:** Container Apps includes a monthly free grant, and Azure SQL serverless auto-pauses after an hour idle. Expect a few dollars a month at most if you leave it running. Run `terraform destroy` when you no longer need it.
 
 ## Project layout
 
@@ -90,3 +96,7 @@ load/                 k6 load test with SLO thresholds
 infra/terraform       Azure infrastructure + monitoring alerts
 .github/workflows     CI/CD pipeline
 ```
+
+## License
+
+[MIT](LICENSE) © 2026 Hamza Muhammad
