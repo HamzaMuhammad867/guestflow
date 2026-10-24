@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\GuestFlow.Api\GuestFlow.Api.csproj" />
   </ItemGroup>
 
