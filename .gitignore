@@ -1,0 +1,13 @@
+bin/
+obj/
+node_modules/
+dist/
+test-results/
+playwright-report/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.env
+.vs/
+.idea/

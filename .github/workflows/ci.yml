@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  api:
+    name: .NET build + unit/integration tests
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: api } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "8.0.x" }
+      - run: dotnet restore GuestFlow.sln
+      - run: dotnet build GuestFlow.sln -c Release --no-restore
+      - run: dotnet test GuestFlow.sln -c Release --no-build --collect:"XPlat Code Coverage" --logger trx
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: test-results, path: api/**/TestResults }
+
+  web:
+    name: React build
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: web } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm run build
+
+  e2e:
+    name: Docker stack + Playwright E2E
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up -d --build
+      - name: Wait for API health
+        run: |
+          for i in $(seq 1 40); do curl -fs http://localhost:8080/health && exit 0; sleep 3; done
+          docker compose logs api; exit 1
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: e2e/playwright-report }
+
+  terraform:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: infra/terraform } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -diff
+        continue-on-error: true
+      - run: terraform init -backend=false
+      - run: terraform validate
+
+  publish:
+    name: Publish images to GitHub Container Registry
+    runs-on: ubuntu-latest
+    needs: [e2e]
+    if: github.ref == 'refs/heads/main'
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          docker build -t ghcr.io/$OWNER/guestflow-api:latest -t ghcr.io/$OWNER/guestflow-api:${{ github.sha }} api/GuestFlow.Api
+          docker build -t ghcr.io/$OWNER/guestflow-web:latest -t ghcr.io/$OWNER/guestflow-web:${{ github.sha }} web
+          docker push --all-tags ghcr.io/$OWNER/guestflow-api
+          docker push --all-tags ghcr.io/$OWNER/guestflow-web

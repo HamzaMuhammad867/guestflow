@@ -1,0 +1,36 @@
+# Full local stack: SQL Server + Redis + .NET API + React web (nginx)
+# Start:  docker compose up --build      → open http://localhost:3000
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${SA_PASSWORD:-Your_strong_Passw0rd}"
+    ports: ["1433:1433"]
+    volumes: [sqldata:/var/opt/mssql]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./api/GuestFlow.Api
+    environment:
+      ConnectionStrings__Sql: "Server=sqlserver,1433;Database=GuestFlow;User Id=sa;Password=${SA_PASSWORD:-Your_strong_Passw0rd};TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
+    ports: ["8080:8080"]
+    depends_on:
+      sqlserver: { condition: service_started }
+      redis: { condition: service_healthy }
+
+  web:
+    build: ./web
+    ports: ["3000:80"]
+    depends_on: [api]
+
+volumes:
+  sqldata:
